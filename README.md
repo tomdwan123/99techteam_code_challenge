@@ -1,1 +1,0 @@
-# 99techteam_code_challenge
