@@ -1,12 +1,12 @@
-# 📘 Overview
+# 📘 Overview 🚀🚀🚀
 
-This module handles secure score updates for users and live score broadcast to clients. It ensures 🚀🚀🚀
+This module handles secure score updates for users and live score broadcast to clients. It make sure
 
-- Score manipulation is prevented.
+- Prevent hacking to increase scores.
 
-- Score updates are only triggered by legitimate, authorized actions.
+- Score updates are only enabled by valid users with sufficient permissions to act
 
-- Real-time scoreboard updates (top 10).
+- Show realtime top 10 scoreboard updates.
 
 # ⚙️ High Architecture
 
@@ -18,10 +18,10 @@ This module handles secure score updates for users and live score broadcast to c
 
 #### API 1
 
-- Endpoint: POST `/api/score/update`
+- Endpoint: POST `/api/v1/update-score`
 
 - Description:
-  Triggered by a valid user action. Authenticated call that increments the user’s score securely.
+  API used to increase the score of a specified user, user action needs valid permission to update the score in the system.
 
 - Header
 
@@ -33,7 +33,7 @@ Authorization: Bearer <JWT Token>
 
 ```json
 {
-  "actionId": "some-unique-identifier"
+  "actionId": "T001" // some-unique-identifier
 }
 ```
 
@@ -41,7 +41,8 @@ Authorization: Bearer <JWT Token>
 
 ```json
 {
-  "success": true,
+  "statusCode": 200,
+  "message": "Update score of user successfully!",
   "newScore": 1450
 }
 ```
@@ -52,19 +53,21 @@ Authorization: Bearer <JWT Token>
 
   - `actionId` must be unique and verifiable.
 
-  - Optional: throttle updates (rate-limiting per minute).
-
 # 🗃️ Database Structure
 
-```sql
-TABLE users (
-  id UUID PRIMARY KEY,
-  username TEXT,
-  score INTEGER,
-  last_updated TIMESTAMP
-)
+```postgres
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  username VARCHAR(255) NOT NULL,
+  score INT DEFAULT 0,
+  created_by VARCHAR(255),
+  updated_by VARCHAR(255),
+  created_dt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_dt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
-INDEX ON score DESC
+-- Create an index on the score column
+CREATE INDEX idx_user_score ON "user"(score);
 ```
 
 # 📡 WebSocket
@@ -80,9 +83,9 @@ INDEX ON score DESC
 
 ```json
 {
-  "leaderboard": [
-    { "username": "Alice", "score": 2010 },
-    { "username": "Bob", "score": 1980 },
+  "scoreboard": [
+    { "username": "Tom", "score": 1000 },
+    { "username": "Jerry", "score": 2000 },
     ...
   ]
 }
@@ -114,7 +117,7 @@ INDEX ON score DESC
 
 - Implement secure JWT authentication and user identity resolution.
 
-- Enforce rate limiting on `/api/score/update`.
+- Enforce rate limiting on `/api/v1/update-score`.
 
 - Prevent duplicate or replayed actionId.
 
