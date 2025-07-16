@@ -1,0 +1,512 @@
+openapi: 3.0.3
+info:
+  title: Resource Management API
+  description: |
+    A comprehensive resource management system API built with Express.js and TypeScript.
+    This API provides CRUD operations for managing various types of resources with 
+    support for filtering, pagination, and statistics.
+  version: 1.0.0
+  contact:
+    name: Resource Management Team
+    email: support@resourcemanagement.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+  - url: https://api.resourcemanagement.com
+    description: Production server
+
+paths:
+  /resources:
+    get:
+      summary: List all resources
+      description: |
+        Retrieve a paginated list of resources with optional filtering by type, status, and name.
+        Supports pagination through page and limit query parameters.
+      operationId: getResources
+      tags:
+        - Resources
+      parameters:
+        - name: type
+          in: query
+          description: Filter resources by type
+          required: false
+          schema:
+            type: string
+            example: "database"
+        - name: status
+          in: query
+          description: Filter resources by status
+          required: false
+          schema:
+            type: string
+            enum: [active, inactive, pending]
+            example: "active"
+        - name: name
+          in: query
+          description: Filter resources by name (partial match)
+          required: false
+          schema:
+            type: string
+            example: "server"
+        - name: page
+          in: query
+          description: Page number for pagination (starts at 1)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+            example: 1
+        - name: limit
+          in: query
+          description: Number of resources per page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+            example: 10
+      responses:
+        '200':
+          description: Resources retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceListResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    
+    post:
+      summary: Create a new resource
+      description: Create a new resource with the provided data
+      operationId: createResource
+      tags:
+        - Resources
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateResourceRequest'
+      responses:
+        '201':
+          description: Resource created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceResponse'
+        '400':
+          description: Bad request - validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /resources/{id}:
+    get:
+      summary: Get a specific resource
+      description: Retrieve a single resource by its ID
+      operationId: getResourceById
+      tags:
+        - Resources
+      parameters:
+        - name: id
+          in: path
+          description: Resource ID
+          required: true
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: Resource retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceResponse'
+        '400':
+          description: Invalid resource ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    
+    put:
+      summary: Update a resource
+      description: Update an existing resource with new data
+      operationId: updateResource
+      tags:
+        - Resources
+      parameters:
+        - name: id
+          in: path
+          description: Resource ID
+          required: true
+          schema:
+            type: integer
+            example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateResourceRequest'
+      responses:
+        '200':
+          description: Resource updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceResponse'
+        '400':
+          description: Bad request - validation error or invalid resource ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    
+    delete:
+      summary: Delete a resource
+      description: Delete an existing resource by its ID
+      operationId: deleteResource
+      tags:
+        - Resources
+      parameters:
+        - name: id
+          in: path
+          description: Resource ID
+          required: true
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: Resource deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid resource ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /resources/stats:
+    get:
+      summary: Get resource statistics
+      description: Retrieve statistical information about resources including counts by type and status
+      operationId: getResourceStats
+      tags:
+        - Resources
+        - Statistics
+      responses:
+        '200':
+          description: Resource statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceStatsResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    Resource:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Unique identifier for the resource
+          example: 1
+        name:
+          type: string
+          description: Name of the resource
+          example: "Database Server"
+        description:
+          type: string
+          description: Detailed description of the resource
+          example: "Primary PostgreSQL database server for production environment"
+          nullable: true
+        type:
+          type: string
+          description: Type/category of the resource
+          example: "database"
+        status:
+          type: string
+          enum: [active, inactive, pending]
+          description: Current status of the resource
+          example: "active"
+        metadata:
+          type: object
+          description: Additional metadata as JSON object
+          example:
+            version: "13.4"
+            location: "us-east-1"
+            cpu: "4 cores"
+            memory: "16GB"
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when the resource was created
+          example: "2025-07-15T10:30:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: Timestamp when the resource was last updated
+          example: "2025-07-15T10:30:00Z"
+      required:
+        - name
+        - type
+        - status
+
+    CreateResourceRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of the resource
+          example: "Database Server"
+          minLength: 1
+        description:
+          type: string
+          description: Detailed description of the resource
+          example: "Primary PostgreSQL database server for production environment"
+        type:
+          type: string
+          description: Type/category of the resource
+          example: "database"
+          minLength: 1
+        status:
+          type: string
+          enum: [active, inactive, pending]
+          description: Initial status of the resource
+          example: "active"
+          default: "active"
+        metadata:
+          type: object
+          description: Additional metadata as JSON object
+          example:
+            version: "13.4"
+            location: "us-east-1"
+            cpu: "4 cores"
+            memory: "16GB"
+      required:
+        - name
+        - type
+
+    UpdateResourceRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of the resource
+          example: "Updated Database Server"
+          minLength: 1
+        description:
+          type: string
+          description: Detailed description of the resource
+          example: "Updated PostgreSQL database server description"
+        type:
+          type: string
+          description: Type/category of the resource
+          example: "database"
+          minLength: 1
+        status:
+          type: string
+          enum: [active, inactive, pending]
+          description: Status of the resource
+          example: "active"
+        metadata:
+          type: object
+          description: Additional metadata as JSON object
+          example:
+            version: "13.5"
+            location: "us-east-1"
+            cpu: "8 cores"
+            memory: "32GB"
+
+    ResourceResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Resource retrieved successfully"
+        data:
+          $ref: '#/components/schemas/Resource'
+
+    ResourceListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Resources retrieved successfully"
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Resource'
+        pagination:
+          type: object
+          properties:
+            total:
+              type: integer
+              description: Total number of resources
+              example: 100
+            page:
+              type: integer
+              description: Current page number
+              example: 1
+            totalPages:
+              type: integer
+              description: Total number of pages
+              example: 10
+            limit:
+              type: integer
+              description: Number of resources per page
+              example: 10
+
+    ResourceStatsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Resource statistics retrieved successfully"
+        data:
+          type: object
+          properties:
+            totalResources:
+              type: integer
+              description: Total number of resources
+              example: 100
+            resourcesByType:
+              type: object
+              description: Count of resources grouped by type
+              example:
+                database: 25
+                server: 30
+                cache: 15
+                storage: 20
+                network: 10
+            resourcesByStatus:
+              type: object
+              description: Count of resources grouped by status
+              example:
+                active: 85
+                inactive: 10
+                pending: 5
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Operation completed successfully"
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: "An error occurred"
+
+  examples:
+    DatabaseResource:
+      summary: Database Server Resource
+      value:
+        id: 1
+        name: "Database Server"
+        description: "Primary PostgreSQL database server for production environment"
+        type: "database"
+        status: "active"
+        metadata:
+          version: "13.4"
+          location: "us-east-1"
+          cpu: "4 cores"
+          memory: "16GB"
+        created_at: "2025-07-15T10:30:00Z"
+        updated_at: "2025-07-15T10:30:00Z"
+
+    WebServerResource:
+      summary: Web Application Server Resource
+      value:
+        id: 2
+        name: "Web Application Server"
+        description: "Node.js application server running the main web application"
+        type: "server"
+        status: "active"
+        metadata:
+          nodeVersion: "18.16.0"
+          port: 3000
+          environment: "production"
+        created_at: "2025-07-15T10:30:00Z"
+        updated_at: "2025-07-15T10:30:00Z"
+
+tags:
+  - name: Resources
+    description: Resource management operations
+  - name: Statistics
+    description: Statistical information about resources
+
+externalDocs:
+  description: Find out more about Resource Management API
+  url: https://github.com/your-repo/resource-management
